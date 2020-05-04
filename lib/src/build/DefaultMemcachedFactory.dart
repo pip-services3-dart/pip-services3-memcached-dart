@@ -1,27 +1,26 @@
-//  @module build 
-// import { Factory } from 'packages:pip_services3_components-node';
-// import { Descriptor } from 'packages:pip_services3_commons-node';
+import 'package:pip_services3_components/pip_services3_components.dart';
+import 'package:pip_services3_commons/pip_services3_commons.dart';
 
-// import { MemcachedCache } from '../cache/MemcachedCache';
-// import { MemcachedLock } from '../lock/MemcachedLock';
+import '../cache/MemcachedCache.dart';
+import '../lock/MemcachedLock.dart';
 
-// 
-// /// Creates Redis components by their descriptors.
-// /// 
-// /// See [[MemcachedCache]]
-// /// See [[MemcachedLock]]
-//  
-// export class DefaultMemcachedFactory extends Factory {
-// 	public static readonly Descriptor = new Descriptor("pip-services", "factory", "memcached", "default", "1.0");
-// 	public static readonly MemcachedCacheDescriptor = new Descriptor("pip-services", "cache", "memcached", "*", "1.0");
-// 	public static readonly MemcachedLockDescriptor = new Descriptor("pip-services", "lock", "memcached", "*", "1.0");
+/// Creates Redis components by their descriptors.
+///
+/// See [MemcachedCache]
+/// See [MemcachedLock]
+class DefaultMemcachedFactory extends Factory {
+  static final descriptor =
+      Descriptor('pip-services', 'factory', 'memcached', 'default', '1.0');
+  static final MemcachedCacheDescriptor =
+      Descriptor('pip-services', 'cache', 'memcached', '*', '1.0');
+  static final MemcachedLockDescriptor =
+      Descriptor('pip-services', 'lock', 'memcached', '*', '1.0');
 
-// 	
-// 	/// Create a new instance of the factory.
-// 	 
-// 	public constructor() {
-//         super();
-// 		this.registerAsType(DefaultMemcachedFactory.MemcachedCacheDescriptor, MemcachedCache);
-// 		this.registerAsType(DefaultMemcachedFactory.MemcachedLockDescriptor, MemcachedLock);
-// 	}
-// }
+  /// Create a  instance of the factory.
+  DefaultMemcachedFactory() : super() {
+    registerAsType(
+        DefaultMemcachedFactory.MemcachedCacheDescriptor, MemcachedCache);
+    registerAsType(
+        DefaultMemcachedFactory.MemcachedLockDescriptor, MemcachedLock);
+  }
+}
