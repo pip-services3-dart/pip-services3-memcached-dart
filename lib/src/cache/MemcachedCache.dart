@@ -1,20 +1,23 @@
+import 'dart:async';
 
+import 'package:memcache/memcache.dart';
+import 'package:memcache/memcache_raw.dart';
 import 'package:pip_services3_commons/pip_services3_commons.dart';
 import 'package:pip_services3_components/pip_services3_components.dart';
 
 /// Distributed cache that stores values in Memcaches caching service.
-/// 
+///
 /// The current implementation does not support authentication.
-/// 
+///
 /// ### Configuration parameters ###
-/// 
-/// - [connection(s)]:           
+///
+/// - [connection(s)]:
 ///   - [discovery_key]:         (optional) a key to retrieve the connection from [IDiscovery]
 ///   - [host]:                  host name or IP address
 ///   - [port]:                  port number
 ///   - [uri]:                   resource URI or connection string with all parameters in it
 /// - [options]:
-///   - [max_size]:              maximum number of values stored in this cache (default: 1000)        
+///   - [max_size]:              maximum number of values stored in this cache (default: 1000)
 ///   - [max_key_size]:          maximum key length (default: 250)
 ///   - [max_expiration]:        maximum expiration duration in milliseconds (default: 2592000)
 ///   - [max_value]:             maximum value length (default: 1048576)
@@ -25,198 +28,178 @@ import 'package:pip_services3_components/pip_services3_components.dart';
 ///   - [failures]:              number of failures before stop retrying (default: 5)
 ///   - [retry]:                 retry timeout in milliseconds (default: 30 sec)
 ///   - [idle]:                  idle timeout before disconnect in milliseconds (default: 5 sec)
-/// 
+///
 /// ### References ###
-/// 
+///
 /// - *:discovery:*:*:1.0        (optional) [IDiscovery] services to resolve connection
 
 /// ### Example ###
-/// 
+///
 ///     var cache = new MemcachedCache();
 ///     cache.configure(ConfigParams.fromTuples(
 ///       "host", "localhost",
 ///       "port", 11211
 ///     ));
-/// 
+///
 ///     cache.open("123", (err) => {
 ///       ...
 ///     });
-/// 
+///
 ///     cache.store("123", "key1", "ABC", (err) => {
 ///          cache.store("123", "key1", (err, value) => {
 ///              // Result: "ABC"
 ///          });
 ///     });
- 
-class MemcachedCache implements ICache, IConfigurable, IReferenceable, IOpenable {
 
-     final _connectionResolver =  ConnectionResolver();
-     int _maxKeySize = 250;
-     int _maxExpiration = 2592000;
-     int _maxValue = 1048576;
-     int _poolSize = 5;
-     int _reconnect = 10000;
-     int _timeout = 5000;
-     int _retries = 5;
-     int _failures = 5;
-     int _retry = 30000;
-     bool _remove = false;
-     int _idle = 5000;
+class MemcachedCache
+    implements ICache, IConfigurable, IReferenceable, IOpenable {
+  final _connectionResolver = ConnectionResolver();
+  int _maxKeySize = 250;
+  int _maxExpiration = 2592000;
+  int _maxValue = 1048576;
+  int _poolSize = 5;
+  int _reconnect = 10000;
+  int _timeout = 5000;
+  int _retries = 5;
+  int _failures = 5;
+  int _retry = 30000;
+  bool _remove = false;
+  int _idle = 5000;
 
-     var _client;
+  Memcache _client;
 
-    
-    /// Creates a new instance of this cache.
-    MemcachedCache();
+  /// Creates a new instance of this cache.
+  MemcachedCache();
 
-    
-    /// Configures component by passing configuration parameters.
-    /// 
-    ///  -  [config]    configuration parameters to be set.
-     @override
-    void configure(ConfigParams config ) {
-        _connectionResolver.configure(config);
-
-        _maxKeySize = config.getAsIntegerWithDefault('options.max_key_size', _maxKeySize);
-        _maxExpiration = config.getAsLongWithDefault('options.max_expiration', _maxExpiration);
-        _maxValue = config.getAsLongWithDefault('options.max_value', _maxValue);
-        _poolSize = config.getAsIntegerWithDefault('options.pool_size', _poolSize);
-        _reconnect = config.getAsIntegerWithDefault('options.reconnect', _reconnect);
-        _timeout = config.getAsIntegerWithDefault('options.timeout', _timeout);
-        _retries = config.getAsIntegerWithDefault('options.retries', _retries);
-        _failures = config.getAsIntegerWithDefault('options.failures', _failures);
-        _retry = config.getAsIntegerWithDefault('options.retry', _retry);
-        _remove = config.getAsBooleanWithDefault('options.remove', _remove);
-        _idle = config.getAsIntegerWithDefault('options.idle', _idle);
-    }
-
-    
-	/// Sets references to dependent components.
-	/// 
-	///  -  [references] 	references to locate the component dependencies. 
+  /// Configures component by passing configuration parameters.
+  ///
+  ///  -  [config]    configuration parameters to be set.
   @override
-    void setReferences(IReferences references) {
-        _connectionResolver.setReferences(references);
-    }
+  void configure(ConfigParams config) {
+    _connectionResolver.configure(config);
 
-    
-	/// Checks if the component is opened.
-	/// 
-	///  Returns true if the component has been opened and false otherwise.
+    _maxKeySize =
+        config.getAsIntegerWithDefault('options.max_key_size', _maxKeySize);
+    _maxExpiration =
+        config.getAsLongWithDefault('options.max_expiration', _maxExpiration);
+    _maxValue = config.getAsLongWithDefault('options.max_value', _maxValue);
+    _poolSize = config.getAsIntegerWithDefault('options.pool_size', _poolSize);
+    _reconnect =
+        config.getAsIntegerWithDefault('options.reconnect', _reconnect);
+    _timeout = config.getAsIntegerWithDefault('options.timeout', _timeout);
+    _retries = config.getAsIntegerWithDefault('options.retries', _retries);
+    _failures = config.getAsIntegerWithDefault('options.failures', _failures);
+    _retry = config.getAsIntegerWithDefault('options.retry', _retry);
+    _remove = config.getAsBooleanWithDefault('options.remove', _remove);
+    _idle = config.getAsIntegerWithDefault('options.idle', _idle);
+  }
+
+  /// Sets references to dependent components.
+  ///
+  ///  -  [references] 	references to locate the component dependencies.
   @override
-    bool isOpen() {
-        return _client;
+  void setReferences(IReferences references) {
+    _connectionResolver.setReferences(references);
+  }
+
+  /// Checks if the component is opened.
+  ///
+  ///  Returns true if the component has been opened and false otherwise.
+  @override
+  bool isOpen() {
+    return _client != null;
+  }
+
+  /// Opens the component.
+  ///
+  ///  -  [correlationId] 	(optional) transaction id to trace execution through call chain.
+  ///  Return 			Future that receives error or null no errors occured.
+  @override
+  Future open(String correlationId) async {
+    var connections = await _connectionResolver.resolveAll(correlationId);
+
+    if (connections.isEmpty) {
+      throw ConfigException(
+          correlationId, 'NO_CONNECTION', 'Connection is not configured');
     }
 
-    
-	// /// Opens the component.
-	// /// 
-	// ///  -  correlationId 	(optional) transaction id to trace execution through call chain.
-  //   ///  -  callback 			callback function that receives error or null no errors occured.
-     
-  //   public open(String correlationId, callback: (err: any) => void): void {
-  //       this._connectionResolver.resolveAll(correlationId, (err, connections) => {
-  //           if (err == null && connections.length == 0)
-  //               err = new ConfigException(correlationId, 'NO_CONNECTION', 'Connection is not configured');
+    //var servers= <String>[];
+    //for (var connection in connections) {
+    var host = connections[0].getHost();
+    var port = connections[0].getPort() ?? 11211;
+    //    servers.add(host + ':' + port.toString());
+    //}
 
-  //           if (err != null) {
-  //                callback(err);
-  //                return;
-  //           } 
+    _client = Memcache.fromRaw(BinaryMemcacheProtocol(host, port));
 
-  //           var servers: string[] = [];
-  //           for (var connection of connections) {
-  //               var host = connection.getHost();
-  //               var port = connection.getPort() || 11211;
-  //               servers.push(host + ':' + port);
-  //           }
+    // var options = {
+    //     maxKeySize: this._maxKeySize,
+    //     maxExpiration: this._maxExpiration,
+    //     maxValue: this._maxValue,
+    //     poolSize: this._poolSize,
+    //     reconnect: this._reconnect,
+    //     timeout: this._timeout,
+    //     retries: this._retries,
+    //     failures: this._failures,
+    //     retry: this._retry,
+    //     remove: this._remove,
+    //     idle: this._idle
+    // };
+  }
 
-  //           var options = {
-  //               maxKeySize: this._maxKeySize,
-  //               maxExpiration: this._maxExpiration,
-  //               maxValue: this._maxValue,
-  //               poolSize: this._poolSize,
-  //               reconnect: this._reconnect,
-  //               timeout: this._timeout,
-  //               retries: this._retries,
-  //               failures: this._failures,
-  //               retry: this._retry,
-  //               remove: this._remove,
-  //               idle: this._idle
-  //           };
+  /// Closes component and frees used resources.
+  ///
+  ///  -  [correlationId] 	(optional) transaction id to trace execution through call chain.
+  ///  Return 			Future that receives error or null no errors occured.
+  @override
+  Future close(String correlationId) async {
+    _client = null;
+  }
 
-  //           var Memcached = require('memcached');
-  //           this._client = new Memcached(servers, options);
+  bool _checkOpened(String correlationId) {
+    if (!isOpen()) {
+      throw InvalidStateException(
+          correlationId, 'NOT_OPENED', 'Connection is not opened');
+    }
+    return true;
+  }
 
-  //           if (callback) callback(null);
-  //       });
-  //   }
+  /// Retrieves cached value from the cache using its key.
+  /// If value is missing in the cache or expired it returns null.
+  ///
+  ///  -  [correlationId]     (optional) transaction id to trace execution through call chain.
+  ///  -  [key]               a unique value key.
+  ///  Return          Future that receives cached value or error.
+  @override
+  Future retrieve(String correlationId, String key) async {
+    if (!_checkOpened(correlationId)) return;
 
-    
-	// /// Closes component and frees used resources.
-	// /// 
-	// ///  -  correlationId 	(optional) transaction id to trace execution through call chain.
-  //   ///  -  callback 			callback function that receives error or null no errors occured.
-     
-  //   public close(String correlationId, callback: (err: any) => void): void {
-  //       this._client = null;
-  //       if (callback) callback(null);
-  //   }
+    return await _client.get(key);
+  }
 
-  //   private checkOpened(String correlationId, callback: any): boolean {
-  //       if (!this.isOpen()) {
-  //           var err = new InvalidStateException(correlationId, 'NOT_OPENED', 'Connection is not opened');
-  //           callback(err, null);
-  //           return false;
-  //       }
-        
-  //       return true;
-  //   }
-    
-    
-  //   /// Retrieves cached value from the cache using its key.
-  //   /// If value is missing in the cache or expired it returns null.
-  //   /// 
-  //   ///  -  correlationId     (optional) transaction id to trace execution through call chain.
-  //   ///  -  key               a unique value key.
-  //   ///  -  callback          callback function that receives cached value or error.
-     
-  //   public retrieve(String correlationId, key: string,
-  //       callback: (err: any, value: any) => void): void {
-  //       if (!this.checkOpened(correlationId, callback)) return;
+  /// Stores value in the cache with expiration time.
+  ///
+  ///  -  [correlationId]     (optional) transaction id to trace execution through call chain.
+  ///  -  [key]               a unique value key.
+  ///  -  [value]             a value to store.
+  ///  -  [timeout]           expiration timeout in milliseconds.
+  ///  Return          (optional) Future that receives an error or null for success
+  @override
+  Future store(String correlationId, String key, value, int timeout) async {
+    if (!_checkOpened(correlationId)) return;
 
-  //       this._client.get(key, callback);
-  //   }
+    var timeoutInSec = Duration(milliseconds: timeout);
+    return await _client.set(key, value, expiration: timeoutInSec);
+  }
 
-    
-  //   /// Stores value in the cache with expiration time.
-  //   /// 
-  //   ///  -  correlationId     (optional) transaction id to trace execution through call chain.
-  //   ///  -  key               a unique value key.
-  //   ///  -  value             a value to store.
-  //   ///  -  timeout           expiration timeout in milliseconds.
-  //   ///  -  callback          (optional) callback function that receives an error or null for success
-     
-  //   public store(String correlationId, key: string, value: any, timeout: number,
-  //       callback: (err: any) => void): void {
-  //       if (!this.checkOpened(correlationId, callback)) return;
-
-  //       var timeoutInSec = timeout / 1000;
-  //       this._client.set(key, value, timeoutInSec, callback);
-  //   }
-
-    
-  //   /// Removes a value from the cache by its key.
-  //   /// 
-  //   ///  -  correlationId     (optional) transaction id to trace execution through call chain.
-  //   ///  -  key               a unique value key.
-  //   ///  -  callback          (optional) callback function that receives an error or null for success
-     
-  //   public remove(String correlationId, key: string,
-  //       callback: (err: any) => void) {
-  //       if (!this.checkOpened(correlationId, callback)) return;
-
-  //       this._client.del(key, callback);
-  //   }
-    
+  /// Removes a value from the cache by its key.
+  ///
+  ///  -  [correlationId]     (optional) transaction id to trace execution through call chain.
+  ///  -  [key]               a unique value key.
+  ///  Return           Future that receives an error or null for success
+  @override
+  Future remove(String correlationId, String key) async {
+    if (!_checkOpened(correlationId)) return;
+    return await _client.remove(key);
+  }
 }
