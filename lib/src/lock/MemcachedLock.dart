@@ -1,4 +1,4 @@
-//  @module lock 
+//  @module lock
 // import { ConfigParams } from 'packages:pip_services3_commons-node';
 // import { IConfigurable } from 'packages:pip_services3_commons-node';
 // import { IReferences } from 'packages:pip_services3_commons-node';
@@ -9,21 +9,21 @@
 // import { ConnectionResolver } from 'packages:pip_services3_components-node';
 // import { Lock } from 'packages:pip_services3_components-node';
 
-// 
+//
 // /// Distributed lock that implemented based on Memcaches caching service.
-// /// 
+// ///
 // /// The current implementation does not support authentication.
-// /// 
+// ///
 // /// ### Configuration parameters ###
-// /// 
-// /// - connection(s):           
-// ///   - discovery_key:         (optional) a key to retrieve the connection from [[https://rawgit.com/pip-services-node/packages:pip_services3_components-node/master/doc/api/interfaces/connect.idiscovery.html IDiscovery]]
+// ///
+// /// - connection(s):
+// ///   - discovery_key:         (optional) a key to retrieve the connection from [IDiscovery](https://pub.dev/documentation/pip_services3_components/latest/pip_services3_components/IDiscovery-class.html)
 // ///   - host:                  host name or IP address
 // ///   - port:                  port number
 // ///   - uri:                   resource URI or connection string with all parameters in it
 // /// - options:
 // ///   - retry_timeout:         timeout in milliseconds to retry lock acquisition. (Default: 100)
-// ///   - max_size:              maximum number of values stored in this cache (default: 1000)        
+// ///   - max_size:              maximum number of values stored in this cache (default: 1000)
 // ///   - max_key_size:          maximum key length (default: 250)
 // ///   - max_expiration:        maximum expiration duration in milliseconds (default: 2592000)
 // ///   - max_value:             maximum value length (default: 1048576)
@@ -34,23 +34,23 @@
 // ///   - failures:              number of failures before stop retrying (default: 5)
 // ///   - retry:                 retry timeout in milliseconds (default: 30 sec)
 // ///   - idle:                  idle timeout before disconnect in milliseconds (default: 5 sec)
-// /// 
+// ///
 // /// ### References ###
-// /// 
-// /// - *:discovery:\*:\*:1.0        (optional) [[https://rawgit.com/pip-services-node/packages:pip_services3_components-node/master/doc/api/interfaces/connect.idiscovery.html IDiscovery]] services to resolve connection
+// ///
+// /// - *:discovery:\*:\*:1.0        (optional) [IDiscovery](https://pub.dev/documentation/pip_services3_components/latest/pip_services3_components/IDiscovery-class.html) services to resolve connection
 //  *
 // /// ### Example ###
-// /// 
+// ///
 // ///     let lock = new MemcachedLock();
 // ///     lock.configure(ConfigParams.fromTuples(
 // ///       "host", "localhost",
 // ///       "port", 11211
 // ///     ));
-// /// 
+// ///
 // ///     lock.open("123", (err) => {
 // ///       ...
 // ///     });
-// /// 
+// ///
 // ///     lock.acquire("123", "key1", (err) => {
 // ///          if (err == null) {
 // ///              try {
@@ -62,10 +62,10 @@
 // ///              }
 // ///          }
 // ///     });
-//  
+//
 // export class MemcachedLock extends Lock implements IConfigurable, IReferenceable, IOpenable {
 //     private _connectionResolver: ConnectionResolver = new ConnectionResolver();
-    
+
 //     private _maxKeySize: number = 250;
 //     private _maxExpiration: number = 2592000;
 //     private _maxValue: number = 1048576;
@@ -80,11 +80,11 @@
 
 //     private _client: any = null;
 
-//     
+//
 //     /// Configures component by passing configuration parameters.
-//     /// 
+//     ///
 //     ///  -  config    configuration parameters to be set.
-//      
+//
 //     public configure(config: ConfigParams): void {
 //         super.configure(config);
 
@@ -103,30 +103,30 @@
 //         this._idle = config.getAsIntegerWithDefault('options.idle', this._idle);
 //     }
 
-//     
+//
 // 	/// Sets references to dependent components.
-// 	/// 
-// 	///  -  references 	references to locate the component dependencies. 
-//      
+// 	///
+// 	///  -  references 	references to locate the component dependencies.
+//
 //     public setReferences(references: IReferences): void {
 //         this._connectionResolver.setReferences(references);
 //     }
 
-//     
+//
 // 	/// Checks if the component is opened.
-// 	/// 
+// 	///
 // 	///  Returns true if the component has been opened and false otherwise.
-//      
+//
 //     public isOpen(): boolean {
 //         return this._client;
 //     }
 
-//     
+//
 // 	/// Opens the component.
-// 	/// 
+// 	///
 // 	///  -  correlationId 	(optional) transaction id to trace execution through call chain.
 //     ///  -  callback 			callback function that receives error or null no errors occured.
-//      
+//
 //     public open(String correlationId, callback: (err: any) => void): void {
 //         this._connectionResolver.resolveAll(correlationId, (err, connections) => {
 //             if (err == null && connections.length == 0)
@@ -135,7 +135,7 @@
 //             if (err != null) {
 //                  callback(err);
 //                  return;
-//             } 
+//             }
 
 //             let servers: string[] = [];
 //             for (let connection of connections) {
@@ -165,12 +165,12 @@
 //         });
 //     }
 
-//     
+//
 // 	/// Closes component and frees used resources.
-// 	/// 
+// 	///
 // 	///  -  correlationId 	(optional) transaction id to trace execution through call chain.
 //     ///  -  callback 			callback function that receives error or null no errors occured.
-//      
+//
 //     public close(String correlationId, callback: (err: any) => void): void {
 //         this._client = null;
 //         if (callback) callback(null);
@@ -182,19 +182,19 @@
 //             callback(err, null);
 //             return false;
 //         }
-        
+
 //         return true;
 //     }
-    
-//     
+
+//
 //     /// Makes a single attempt to acquire a lock by its key.
 //     /// It returns immediately a positive or negative result.
-//     /// 
+//     ///
 //     ///  -  correlationId     (optional) transaction id to trace execution through call chain.
 //     ///  -  key               a unique lock key to acquire.
 //     ///  -  ttl               a lock timeout (time to live) in milliseconds.
 //     ///  -  callback          callback function that receives a lock result or error.
-//      
+//
 //     public tryAcquireLock(String correlationId, key: string, ttl: number,
 //         callback: (err: any, result: boolean) => void): void {
 //         if (!this.checkOpened(correlationId, callback)) return;
@@ -207,13 +207,13 @@
 //         });
 //     }
 
-//     
+//
 //     /// Releases prevously acquired lock by its key.
-//     /// 
+//     ///
 //     ///  -  correlationId     (optional) transaction id to trace execution through call chain.
 //     ///  -  key               a unique lock key to release.
 //     ///  -  callback          callback function that receives error or null for success.
-//      
+//
 //     public releaseLock(String correlationId, key: string,
 //         callback?: (err: any) => void): void {
 //         if (!this.checkOpened(correlationId, callback)) return;
