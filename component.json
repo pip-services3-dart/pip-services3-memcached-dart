@@ -1,6 +1,6 @@
 {
-    "name": "pip-services-memcached",
-    "registry": "pipdevs",
+    "name": "pip_services3_memcached",
+    "registry": "github.com/pip-services3-dart",
     "version": "1.0.0",
     "build": "0"
 }
