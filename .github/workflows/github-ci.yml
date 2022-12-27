@@ -3,6 +3,8 @@ name: Pip.Services Memcached Dart Delivery
 # Configure trigger rules
 on: 
   push:
+    branches:
+      - master
     paths:
     - '**'
     - '!README.md'
